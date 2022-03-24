@@ -1,0 +1,145 @@
+%% Blackjack!!!!
+clear;close all
+
+plotcounter = 0;
+cash = 10;   %intializing cash element
+
+set1 = [2 3 4 5 6 7 8 9 10 10 10 11];  %setting up four different sets 'suits', putting them into a deck and then shuffling it by randomizing the values
+set2 = [2 3 4 5 6 7 8 9 10 10 10 11];
+set3 = [2 3 4 5 6 7 8 9 10 10 10 11];
+set4 = [2 3 4 5 6 7 8 9 10 10 10 11];
+deck = [set1 set2 set3 set4];
+
+disp("Hi! Welcome to Blackjack! Here are some rules for the game!");      %rules of blackjack
+disp("You start the game with $10, everytime you win a round, you make $1.50. Everytime you lose, you lose $1.");
+disp("After each round, you can either keep playing or test your luck once again! Press p to play and q to quit.");
+disp("In each game, there is a dealer, in this case me, and the player, you.");
+disp("The round starts with me giving you two cards. I draw until I reach a card total of 17, or my card total goes past 21, which means I'm busted!");
+disp("If I am not busted, you can either draw another card to get closer to 21, or end the round.");
+disp("If you decide to pull cards, the round continues until you decide to stop or are busted.");
+disp("At the end, whoever is closer to a card total of 21 without going over (busting), wins! If there is a tie, you get $1!");
+disp("Remember, Aces are worth 11 to start with but if the total is over 21, it can be changed to 1!");
+disp("Have fun playing!")
+
+while(cash > 0)                 %while loop repeating as long as keepplaying is 'p'
+    shuffleddeck = deck(randperm(48));   %deck shuffles each time, so the starting cards will be different
+    keepplaying = input("Would you like to start/ keep playing? (q to quit, and p to play):", 's');    %keepplaying user input to test whether to continuing playing or not
+    outcome = 0;
+    if(strcmp(keepplaying, 'q') || cash == 0)
+        disp("Thanks for playing! I hope you had fun! You have $" + cash + "!");            %checking condition and displaying cash value
+        break;
+    elseif(strcmp(keepplaying, 'p'))                %running mechanics function with outcome and plotcounter as inputs and subtracting cash
+        cash = cash - 1;
+        [outcome, plotcounter] = Mechanics(shuffleddeck, plotcounter);
+    else                                                                        %checking for invalid input 
+       disp("Sorry that wasn't an option. Reminder that 'q' is to quit and 'p' is to play. Please enter one of the two (no quotes)!")
+    end
+    if(outcome == 1)                                %displaying outcome results: 1 for a win, 2 for a tie, and 0 for a loss : adjusting cash too
+            cash = cash + 1.5;
+            disp("Congrats! You've won! You now have $" + cash + "!");
+    elseif(outcome == 2)
+            cash = cash + 1;
+            disp("You've tied! You now have $" + cash + "!");
+    else 
+            disp("Sorry! You lost that round. You now have $" + cash + "!");
+    end
+
+end
+
+%functions
+function [outcome, plotcounter] = Mechanics(shuffleddeck, plotcounter)              %taking in shuffleddeck and plotcounter as input 
+    playerStartingCards = shuffleddeck(1, 1:2);                                 %pulling cards for starting cards for both the dealer and human
+    cardtotalHuman = sum(playerStartingCards);                                  %also assigning values to the cardtotal for both the dealer and human
+    dealerStartingCards = shuffleddeck(1, 3:4);
+    cardtotalDealer = sum(dealerStartingCards);     
+    counter = 3;                                                         %intializing counters and tracking variables
+    busted = 0;                                                         %counter for index control, busted for outcome control and running for while loop
+    running = 0;
+    while(cardtotalDealer < 17)                                         %loop for the dealer to add cards to their hand till they bust or get close to 21
+        dealerStartingCards(counter) = shuffleddeck(1, (counter + 10));     %pulling more cards with a buffer of a couple cards (hence the + 10 to the index)
+        cardtotalDealer = sum(dealerStartingCards);
+        counter = counter + 1;
+        if(cardtotalDealer > 21)                            %if dealer gets past 21, they bust and it gets displayed
+            busted = 1;
+            disp("The dealer busted!");
+        end
+    end
+    if(busted == 1)
+        outcome = 1;                    % if the dealer doesn't bust, then the while loop below runs
+    else
+        counter1 = 3;
+        while(running == 0)                                 %for the human - input to draw or stay 
+            drawornot = input("The Dealer has not busted. You're total card amount is " + cardtotalHuman + ". Would you like to draw or not? Enter d for draw or s for stay:", 's');
+            if(strcmp(drawornot, 'd'))
+                playerStartingCards(1, counter1) = shuffleddeck(1, (counter1 + 20));            % if drawing, running cardtricks, and getting back outcome, their cards, and the card total
+                cardtotalHuman = sum(playerStartingCards);
+                [outcome, playerStartingCards, cardtotalHuman] = cardTricks(playerStartingCards, cardtotalHuman, counter1);
+                if(outcome == 0)                % if they loose, break out of loop
+                    break;
+                end
+                counter1 = counter1 + 1;
+            elseif(strcmp(drawornot, 's'))              % if not drawing, change conditions of loop and decide on the outcome manually through if statements
+                running = 1;
+                if(cardtotalHuman > cardtotalDealer)
+                    outcome = 1;
+                elseif(cardtotalDealer > cardtotalHuman)
+                    outcome = 0;
+                else
+                    outcome = 2;
+                end
+            else                %valid input check
+                disp("Hi, sorry that wasn't an appropriate response. Try again!")
+            end
+        end
+    end
+    plotcounter = plotcounter + 1;
+    plotCards(cardtotalDealer, dealerStartingCards, "Dealer", plotcounter);             %plotcounter for figure # and plotting each bar graph with correct variables for dealer and human
+    plotCards(cardtotalHuman, playerStartingCards, "Human", plotcounter);
+end
+
+function [outcome, playerStartingCards, cardtotalHuman] = cardTricks(playerStartingCards, cardtotalHuman, counter1)     %cardtricks function to do aces trick, pull card and check 21
+    disp("The card you just drew is " + playerStartingCards(1, counter1) + "." );
+    outcome = 0;
+    if(cardtotalHuman < 21)                     %checking if card total for human player is below 21 and adjusting outcome accordingly
+        outcome = 1;
+    elseif(cardtotalHuman == 21)
+        outcome = 2;
+    else
+        for i = 1:length(playerStartingCards)                       %checking if total is over 21, checking if any cards are over 21, and adjusting them 
+            if(playerStartingCards(i) == 11)
+                playerStartingCards(i) = 1;
+            end
+        end
+        cardtotalHuman = sum(playerStartingCards);              %recalculating the sum, and looking at the outcome again
+        if(cardtotalHuman < 21)
+            outcome = 1;
+        end
+    end
+end
+
+function plotCards(cardtotal, cards, titles, plotcounter)           %plot cards function with input of card total, current cards, the plotcounter and the right titles
+    if(cardtotal > 21)
+        barcolor = 'r';                                 %looking if player busted, and changing bar color accordingly
+    else
+        barcolor = 'k';
+    end
+    if(strcmp(titles, "Dealer"))                    %changing title, figure number, and sublplot for both dealer and human graphs
+        figure(plotcounter);
+        subplot(2, 1, 1); 
+    else
+        figure(plotcounter);
+        subplot(2, 1, 2);
+    end
+    cards(11) = cardtotal;                                  %adding in card total on thr right most bar
+    hold on
+    set(gca, 'Color', 'g');
+    bar(cards, barcolor);                                                         %changing background color, text, titles, and axis
+    b = bar(cards, barcolor);
+    text(b(1).XEndPoints, b(1).YEndPoints, string(b(1).YData), 'Color','w', 'FontSize', 13);
+    xlabel("card number");
+    ylabel("card total");
+    title(titles);
+    axis([0 11.5 0 30]);
+    hold off
+end
+
